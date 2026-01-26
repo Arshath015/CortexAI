@@ -26,6 +26,18 @@ Ollama (phi3)
 
 ---
 
+## 📸 Application Screenshots
+
+### Guest Link
+![Guest Link](result_snapshot/guestlink.png)
+
+### Admin Cortex
+![Admin Cortex](result_snapshot/admincortex.png)
+
+### System Internals
+![System Internals](result_snapshot/systeminternals.png)
+
+---
 ## Core Architecture
 
 ### Guest Link
@@ -69,8 +81,9 @@ Ollama (phi3)
 ## How Reasoning Works (Few-Shot Example)
 
 ### Guest Input:
+```json
 i need 1 plate idly and a water bottle
-
+```
 
 ### System Output:
 ```json
@@ -157,7 +170,7 @@ http://localhost:3000
 ---
 
 ## Data Flow
-
+```bash
 Guest UI → FastAPI (/process)
              ↓
      LangGraph (state machine)
@@ -167,6 +180,7 @@ Guest UI → FastAPI (/process)
         Ollama (phi3)
              ↓
  Structured JSON response
+```
 
 ---
 
@@ -213,19 +227,9 @@ Optional future upgrades:
 
 ---
 
-## Evaluation Alignment
-| Criteria              | Covered |
-| --------------------- | ------- |
-| Problem decomposition | ✅       |
-| Agent design          | ✅       |
-| Workflow clarity      | ✅       |
-| Reasoning quality     | ✅       |
-| Local LLM usage       | ✅       |
-| Code readability      | ✅       |
-| Creativity            | ✅       |
-
 # Author
 Arshath Farwyz | AI Engineer
+
 [Portfolio](https://arshathfarwyz.lovable.app/)
 [Linkedin](https://www.linkedin.com/in/arshath-farwyz-2ba0b0226/)
 
