@@ -1,0 +1,179 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, User, Bot, Loader2 } from 'lucide-react';
+import { DatabaseState, ChatMessage, GuestRequest } from '../types';
+import { processGuestInput } from '../services/ollamaService'; // ✅ switched from geminiService
+
+interface GuestLinkProps {
+  chatId: string;
+  db: DatabaseState;
+  addMessage: (msg: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
+  updateRequest: (req: GuestRequest) => void;
+}
+
+const GuestLink: React.FC<GuestLinkProps> = ({ chatId, db, addMessage, updateRequest }) => {
+  const [inputValue, setInputValue] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const messages = db.messages.filter(m => m.chat_id === chatId);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isProcessing]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isProcessing) return;
+
+    const guestText = inputValue.trim();
+    setInputValue('');
+    addMessage({ chat_id: chatId, sender: 'guest', text: guestText });
+
+    setIsProcessing(true);
+    try {
+      const activeRequests = db.requests.filter(
+        r => r.chat_id === chatId && r.status !== 'completed'
+      );
+
+      const result = await processGuestInput(guestText, messages, activeRequests);
+
+      if (result) {
+        let requestId = result.targetRequestId;
+
+        if (result.intent === 'NEW_REQUEST' || !requestId) {
+          requestId = `req_${Date.now()}`;
+          const newReq: GuestRequest = {
+            id: requestId,
+            chat_id: chatId,
+            timestamp: new Date().toISOString(),
+            category: result.category,
+            structured_data: result.reconstructedRequest,
+            status: 'confirmed',
+            analysis: result.analysis,
+          };
+          updateRequest(newReq);
+        } else if (result.intent === 'MODIFICATION' && requestId) {
+          const existing = db.requests.find(r => r.id === requestId);
+          if (existing) {
+            updateRequest({
+              ...existing,
+              structured_data: result.reconstructedRequest,
+              analysis: result.analysis,
+              status: 'confirmed'
+            });
+          }
+        }
+
+        addMessage({ 
+          chat_id: chatId, 
+          sender: 'agent', 
+          text: result.agentResponse,
+          associated_request_id: requestId 
+        });
+      } else {
+        addMessage({ 
+          chat_id: chatId, 
+          sender: 'agent', 
+          text: "I'm sorry, I'm having trouble processing that right now. How else can I help you?" 
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <header className="px-6 py-4 bg-white border-b border-slate-200 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+            <Bot className="w-6 h-6 text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-800">Cortex Concierge</h2>
+            <p className="text-xs text-emerald-500 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+              Online & Ready
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center max-w-sm mx-auto space-y-4">
+            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-2">
+              <Bot className="w-8 h-8 text-indigo-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800">Welcome to Cortex Guest Services</h3>
+            <p className="text-slate-500 text-sm">
+              I can help you with room service, maintenance requests, or general inquiries.
+            </p>
+          </div>
+        )}
+
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex ${msg.sender === 'guest' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`flex gap-3 max-w-[80%] ${msg.sender === 'guest' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${msg.sender === 'guest' ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+                {msg.sender === 'guest' ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-slate-600" />}
+              </div>
+              <div>
+                <div className={`p-4 rounded-2xl text-sm shadow-sm ${
+                  msg.sender === 'guest'
+                    ? 'bg-indigo-600 text-white rounded-tr-none'
+                    : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                }`}>
+                  {msg.text}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 px-1">
+                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {isProcessing && (
+          <div className="flex justify-start">
+            <div className="flex gap-3 items-center">
+              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-slate-600" />
+              </div>
+              <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                <span className="text-xs text-slate-400 font-medium">Processing request...</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSubmit} className="p-6 bg-white border-t border-slate-200">
+        <div className="relative max-w-4xl mx-auto">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            disabled={isProcessing}
+            placeholder="Type your request here..."
+            className="w-full pl-6 pr-14 py-4 bg-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            type="submit"
+            disabled={!inputValue.trim() || isProcessing}
+            className="absolute right-2 top-2 bottom-2 px-4 bg-indigo-600 text-white rounded-xl"
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default GuestLink;

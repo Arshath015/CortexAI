@@ -1,0 +1,5 @@
+{
+  "name": "Cortex Guest Service Management",
+  "description": "An advanced guest service management system with three layers: Guest Link (conversational interface), Admin Cortex (dispatch management), and System Internals (state inspection). Powered by Gemini 3 Pro for context-aware request reconstruction and reasoning.",
+  "requestFramePermissions": []
+}
