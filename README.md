@@ -16,11 +16,13 @@ This project implements an **intelligent guest service management system** that:
 
 The system uses a **local LLM (Ollama – phi3)** and is designed as a **multi-layer architecture**:
 
+```bash
 Guest Link (UI) → Admin Cortex (Dispatch) → System Internals (Memory)
 ↓
 LangChain + LangGraph (Agent)
 ↓
 Ollama (phi3)
+```
 
 ---
 
@@ -94,6 +96,8 @@ It reconstructs meaning from the entire chat history.
 ---
 
 ### Project Structure:
+
+```bash
 cortex/
 ├── backend/
 │   └── ollama_service.py   # FastAPI + LangChain + LangGraph
@@ -105,6 +109,7 @@ cortex/
 │   ├── services/
 │   │   └── ollamaService.ts
 │   └── App.tsx
+```
 
 ---
 
