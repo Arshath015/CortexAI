@@ -1,4 +1,6 @@
 # Cortex Guest Service Management System  
+
+![Python](https://img.shields.io/badge/python-3.x-blue.svg)
 **AI-Driven Conversational Guest Service Platform (Local LLM + LangChain + LangGraph)**
 
 > A full-stack AI system that behaves like a real hotel/service concierge — capable of understanding orders, complaints, and follow-ups using conversational memory and structured reasoning.
